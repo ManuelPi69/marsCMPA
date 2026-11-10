@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#17110e" />
+<meta name="description" content="Expedição 3D interativa de geologia planetária em Marte: Valles Marineris, Olympus Mons, erosão, água antiga e gravidade marciana." />
+<title>MARTE // Laboratório de Geologia Planetária</title>
+<style>
+  :root{
+    --bg:#0d0d0e; --panel:rgba(20,18,17,.88); --panel2:rgba(32,26,23,.86);
+    --line:rgba(255,224,198,.14); --text:#f5eee8; --muted:#b9aaa0;
+    --rust:#e77e4e; --amber:#f0b66b; --sand:#d6b38c; --green:#8fb49b;
+    --danger:#e68f78; --shadow:0 18px 60px rgba(0,0,0,.38);
+    font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{width:100%;height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--text)}
+  button,select{font:inherit}
+  button{cursor:pointer;color:inherit}
+  #world{position:fixed;inset:0;z-index:0;display:block;width:100%;height:100%;outline:none}
+  .grain{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.06;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E")}
+  .topbar{position:fixed;z-index:5;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:17px 22px;background:linear-gradient(180deg,rgba(10,9,9,.83),rgba(10,9,9,0));pointer-events:none}
+  .topbar>*{pointer-events:auto}
+  .brand{display:flex;align-items:center;gap:12px;min-width:0}
+  .brand-mark{width:34px;height:34px;border:1px solid rgba(240,182,107,.65);border-radius:50%;display:grid;place-items:center;color:var(--amber);font-size:16px;box-shadow:0 0 25px rgba(231,126,78,.18)}
+  .brand-name{font-size:11px;letter-spacing:.2em;font-weight:800;color:#f5e8dc}
+  .brand-sub{font-size:9px;letter-spacing:.16em;color:#bca99a;margin-top:3px}
+  .top-actions{display:flex;align-items:center;gap:8px}
+  .pill{display:flex;align-items:center;gap:8px;padding:8px 11px;border:1px solid var(--line);border-radius:999px;background:rgba(19,17,16,.58);font-size:10px;letter-spacing:.08em;color:#ead9c9;backdrop-filter:blur(12px)}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 10px rgba(143,180,155,.7)}
+  .btn{border:1px solid rgba(239,173,120,.34);background:rgba(73,43,31,.72);padding:10px 14px;border-radius:9px;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;transition:.2s;backdrop-filter:blur(10px)}
+  .btn:hover{background:rgba(133,69,43,.82);border-color:rgba(255,198,146,.72);transform:translateY(-1px)}
+  .btn.primary{background:linear-gradient(135deg,#d66f45,#9e4931);border-color:#e68d62;color:#fff4eb;box-shadow:0 7px 25px rgba(180,78,44,.24)}
+  .btn.ghost{background:rgba(17,16,16,.64);border-color:var(--line);color:#dfcfc1}
+  .btn.small{padding:8px 10px;font-size:9px}
+  .btn:disabled{opacity:.35;cursor:not-allowed;transform:none}
+  .side{position:fixed;z-index:4;top:76px;bottom:105px;width:294px;display:flex;flex-direction:column;gap:10px;pointer-events:none}
+  #leftSide{left:18px}
+  #rightSide{right:18px;align-items:stretch}
+  .panel{pointer-events:auto;background:var(--panel);border:1px solid var(--line);border-radius:15px;box-shadow:var(--shadow);backdrop-filter:blur(18px);overflow:hidden}
+  .panel-pad{padding:16px}
+  .eyebrow{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--amber);font-weight:800}
+  .panel h2{font-size:17px;line-height:1.18;margin:7px 0 8px;font-weight:760;letter-spacing:-.02em}
+  .panel p{font-size:11px;line-height:1.55;color:var(--muted);margin:0}
+  .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:12px}
+  .stat{background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);padding:9px;border-radius:9px}
+  .stat strong{display:block;font-size:16px;color:#f4d2b2;font-variant-numeric:tabular-nums}
+  .stat span{display:block;font-size:8px;color:#af9c8d;letter-spacing:.12em;text-transform:uppercase;margin-top:4px}
+  .mission-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .mini-tag{font-size:8px;letter-spacing:.12em;padding:5px 7px;border-radius:5px;background:rgba(231,126,78,.14);color:#f2b184;border:1px solid rgba(231,126,78,.2);white-space:nowrap}
+  .progress-track{height:4px;background:rgba(255,255,255,.09);border-radius:9px;overflow:hidden;margin:12px 0 10px}
+  .progress-fill{height:100%;width:0;background:linear-gradient(90deg,#b95d3c,#f0b66b);transition:width .4s}
+  .task-list{display:grid;gap:7px}
+  .task{display:flex;align-items:flex-start;gap:9px;padding:8px;border-radius:8px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.045);cursor:pointer;transition:.18s}
+  .task:hover{background:rgba(255,255,255,.06)}
+  .task-check{flex:0 0 16px;width:16px;height:16px;border-radius:50%;border:1px solid rgba(236,190,152,.48);display:grid;place-items:center;font-size:9px;color:#1c1511;margin-top:1px}
+  .task.done .task-check{background:var(--green);border-color:var(--green)}
+  .task strong{font-size:10px;display:block;font-weight:700;color:#f0e3d8}
+  .task small{font-size:9px;display:block;color:#a9988c;margin-top:3px;line-height:1.35}
+  .tool-row{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}
+  .tool{padding:10px 8px;text-align:left;border:1px solid rgba(255,255,255,.09);border-radius:9px;background:rgba(255,255,255,.035);font-size:9px;color:#e8d8cb;min-height:54px}
+  .tool:hover,.tool.active{border-color:rgba(240,182,107,.55);background:rgba(231,126,78,.12)}
+  .tool .ico{display:block;font-size:17px;margin-bottom:5px}
+  .field-note{min-height:148px}
+  .note-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .note-head h3{font-size:12px;margin:0;color:#f1dfd0}
+  .note-body{font-size:10px;line-height:1.55;color:#bba99c;margin-top:9px}
+  .note-body strong{color:#f4c69e}
+  .note-image{width:100%;height:108px;object-fit:cover;display:block;border-radius:8px;margin-top:10px;filter:saturate(.82) contrast(1.04)}
+  .photo-credit{font-size:8px;color:#8f8075;margin-top:5px}
+  .evidence-list{display:grid;gap:7px;margin-top:9px}
+  .evidence{display:flex;align-items:center;gap:8px;font-size:9px;color:#cbb9aa}
+  .evidence i{width:6px;height:6px;border-radius:50%;background:#e49a61;box-shadow:0 0 8px rgba(228,154,97,.4)}
+  .bottomDock{position:fixed;z-index:5;left:50%;bottom:16px;transform:translateX(-50%);width:min(780px,calc(100% - 32px));display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:rgba(17,15,14,.84);backdrop-filter:blur(18px);box-shadow:var(--shadow)}
+  .dock-location{min-width:150px;flex:1}
+  .dock-location label{display:block;font-size:8px;letter-spacing:.15em;color:#a9988e;text-transform:uppercase;margin-bottom:5px}
+  select{width:100%;border:1px solid rgba(255,255,255,.12);border-radius:7px;background:#211b18;color:#f2e5da;padding:8px 9px;font-size:10px;outline:none}
+  .dock-divider{width:1px;height:30px;background:var(--line)}
+  .dock-actions{display:flex;align-items:center;gap:6px}
+  .dock-icon{width:39px;height:39px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.1);border-radius:9px;background:rgba(255,255,255,.04);font-size:16px;color:#e7c5a6}
+  .dock-icon:hover,.dock-icon.active{background:rgba(231,126,78,.17);border-color:rgba(231,126,78,.55)}
+  .timer{font-variant-numeric:tabular-nums;font-size:11px;color:#efc8a4;min-width:54px;text-align:center}
+  .hint{position:fixed;z-index:3;bottom:88px;left:50%;transform:translateX(-50%);padding:6px 11px;border-radius:999px;background:rgba(10,9,9,.52);color:#c7b6a9;font-size:9px;letter-spacing:.05em;white-space:nowrap;pointer-events:none}
+  .intro{position:fixed;z-index:8;inset:0;display:grid;place-items:center;padding:20px;background:radial-gradient(ellipse at 50% 48%,rgba(80,43,29,.2),rgba(7,7,8,.66) 62%,rgba(7,7,8,.88));transition:opacity .55s,visibility .55s}
+  .intro.hidden{opacity:0;visibility:hidden;pointer-events:none}
+  .intro-card{width:min(590px,100%);padding:clamp(22px,4vw,38px);text-align:left;border:1px solid rgba(235,176,126,.22);border-radius:18px;background:linear-gradient(145deg,rgba(24,20,18,.91),rgba(14,13,13,.9));box-shadow:0 30px 100px rgba(0,0,0,.48);backdrop-filter:blur(18px)}
+  .intro-kicker{display:flex;align-items:center;gap:9px;font-size:9px;letter-spacing:.22em;color:#dba274;font-weight:800}
+  .intro h1{font-size:clamp(30px,5vw,48px);line-height:.98;letter-spacing:-.05em;margin:18px 0 12px;font-weight:800}
+  .intro h1 em{font-style:normal;color:#ec9a68}
+  .intro p{font-size:12px;line-height:1.65;color:#c6b4a8;max-width:490px}
+  .intro-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:22px 0}
+  .intro-metrics div{padding:11px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);border-radius:9px}
+  .intro-metrics strong{font-size:19px;color:#f2c398;display:block}
+  .intro-metrics span{font-size:8px;letter-spacing:.1em;color:#aa988b;text-transform:uppercase;display:block;margin-top:4px}
+  .intro-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .smallprint{font-size:8px;color:#85786e;margin-top:15px;line-height:1.5}
+  .modal{position:fixed;z-index:10;inset:0;display:none;place-items:center;padding:18px;background:rgba(5,5,5,.72);backdrop-filter:blur(10px)}
+  .modal.open{display:grid}
+  .modal-card{width:min(660px,100%);max-height:min(90vh,820px);overflow:auto;padding:22px;border:1px solid rgba(235,176,126,.26);border-radius:16px;background:linear-gradient(145deg,#211a17,#121111);box-shadow:0 25px 90px rgba(0,0,0,.55)}
+  .modal-top{display:flex;align-items:flex-start;justify-content:space-between;gap:15px}
+  .modal-top h2{font-size:22px;margin:5px 0 7px}
+  .modal-top p{font-size:10px;line-height:1.55;color:#bba99d;margin:0}
+  .close{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.04);font-size:16px}
+  .question{padding:15px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+  .question:last-child{border-bottom:0}
+  .q-title{font-size:12px;font-weight:700;line-height:1.45;margin-bottom:9px}
+  .answers{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  .answer{padding:9px 10px;border:1px solid rgba(255,255,255,.11);border-radius:8px;background:rgba(255,255,255,.035);font-size:10px;text-align:left;color:#d7c7bb;line-height:1.4}
+  .answer:hover{border-color:rgba(240,182,107,.5)}
+  .answer.selected{border-color:#e8a06c;background:rgba(231,126,78,.14);color:#fff0e2}
+  .answer.correct{border-color:#81ae91;background:rgba(91,142,109,.17)}
+  .answer.wrong{border-color:#c77c6b;background:rgba(175,81,65,.16)}
+  .feedback{font-size:9px;line-height:1.5;color:#b8c6b9;margin-top:8px;min-height:14px}
+  .quiz-result{display:none;margin:15px 0;padding:15px;border:1px solid rgba(143,180,155,.3);border-radius:10px;background:rgba(91,142,109,.1)}
+  .quiz-result.show{display:block}
+  .quiz-result strong{font-size:24px;color:#b4d2bd}
+  .toast{position:fixed;z-index:20;top:74px;left:50%;transform:translate(-50%,-10px);opacity:0;pointer-events:none;padding:10px 14px;border-radius:9px;border:1px solid rgba(240,182,107,.25);background:rgba(24,19,16,.94);color:#f0d7c2;font-size:10px;box-shadow:var(--shadow);transition:.25s;max-width:min(90vw,500px);text-align:center}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+  .sources{position:fixed;z-index:4;right:18px;bottom:88px;font-size:8px;color:#a89588;text-align:right;pointer-events:none;text-shadow:0 1px 8px #000}
+  .xr-only{display:none}
+  body.xr-active .topbar,body.xr-active .side,body.xr-active .bottomDock,body.xr-active .hint,body.xr-active .sources,body.xr-active .grain{display:none!important}
+  body.xr-active .intro{display:none}
+  body.xr-active .toast{display:none}
+  body.xr-active #invertController{display:none!important}
+  body.xr-active .xr-only{display:block}
+  #xrHelp{position:fixed;z-index:6;left:50%;bottom:18px;transform:translateX(-50%);padding:8px 12px;border-radius:999px;background:rgba(12,10,10,.68);border:1px solid rgba(255,255,255,.15);font-size:9px;color:#f0d5bd;white-space:nowrap;pointer-events:none}
+  .mobile-move{display:none}
+  @media(max-width:900px){
+    .side{width:260px;top:70px;bottom:100px}
+    #leftSide{left:10px}#rightSide{right:10px}
+    .panel-pad{padding:12px}
+    .panel h2{font-size:15px}
+    .bottomDock{bottom:10px;width:calc(100% - 20px)}
+    .hint{bottom:78px}
+  }
+  @media(max-width:680px){
+    .topbar{padding:12px}.brand-sub{display:none}.brand-name{font-size:9px}.pill{display:none}
+    .side{top:auto;bottom:75px;width:calc(50% - 15px);max-height:34vh;overflow:auto}
+    #leftSide{left:8px}#rightSide{right:8px}
+    .side .panel:not(.compact){display:none}
+    .side .compact{display:block}
+    .panel-pad{padding:10px}.panel h2{font-size:13px}.panel p{font-size:9px}
+    .stat-grid{margin-top:8px}.stat{padding:6px}.stat strong{font-size:13px}.stat span{font-size:7px}
+    .task-list{gap:4px}.task{padding:6px;gap:6px}.task strong{font-size:8px}.task small{font-size:7px}
+    .tool-row{grid-template-columns:1fr 1fr}.tool{min-height:42px;padding:7px;font-size:8px}.tool .ico{font-size:14px;margin-bottom:2px}
+    .bottomDock{gap:6px;padding:7px}.dock-location{min-width:100px}.dock-location label{font-size:7px}select{font-size:9px;padding:7px 5px}
+    .dock-icon{width:33px;height:34px;font-size:14px}.dock-divider{height:25px}.timer{font-size:9px;min-width:40px}
+    .hint{bottom:60px;font-size:7px}.sources{display:none}
+    .intro-card{padding:22px}.intro h1{font-size:31px}.intro p{font-size:11px}.intro-metrics{margin:15px 0}.intro-metrics strong{font-size:16px}
+    .answers{grid-template-columns:1fr}
+  }
+  @media(hover:none){.hint{display:none}.mobile-move{display:flex}}
+</style>
+</head>
+<body>
+<canvas id="world" aria-label="Ambiente tridimensional de Marte"></canvas>
+<div class="grain"></div>
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark">◉</div>
+    <div><div class="brand-name">MARS FIELD LAB</div><div class="brand-sub">GEOLOGIA PLANETÁRIA · EXPEDIÇÃO 01</div></div>
+  </div>
+  <div class="top-actions">
+    <div class="pill"><span class="dot"></span><span id="statusText">SISTEMA PRONTO</span></div>
+    <div class="pill"><span>GRAVIDADE</span><strong>3,71 m/s²</strong></div>
+    <button class="btn primary" id="vrButton">◉ ENTRAR EM VR</button>
+  </div>
+</header>
+
+<aside class="side" id="leftSide">
+  <section class="panel compact">
+    <div class="panel-pad">
+      <div class="mission-head"><span class="eyebrow">Missão de campo</span><span class="mini-tag">40 MIN</span></div>
+      <h2 id="stationTitle">Valles Marineris</h2>
+      <p id="stationDesc">Investigue um sistema de cânions gigantes, suas escarpas, camadas expostas e depósitos de encosta.</p>
+      <div class="stat-grid">
+        <div class="stat"><strong id="statRelief">9,3 km</strong><span>relevo máximo regional</span></div>
+        <div class="stat"><strong id="statScale">3.870 km</strong><span>extensão do cânion</span></div>
+      </div>
+    </div>
+  </section>
+  <section class="panel">
+    <div class="panel-pad">
+      <div class="mission-head"><span class="eyebrow">Trilha de aprendizagem</span><span class="mini-tag" id="taskCount">0/4</span></div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="task-list" id="taskList">
+        <div class="task" data-task="layers"><span class="task-check">✓</span><div><strong>1 · Ler as camadas</strong><small>8 min · Identifique estratos e materiais expostos.</small></div></div>
+        <div class="task" data-task="mass"><span class="task-check">✓</span><div><strong>2 · Investigar a escarpa</strong><small>8 min · Reconheça sinais de deslizamento e erosão.</small></div></div>
+        <div class="task" data-task="wind"><span class="task-check">✓</span><div><strong>3 · Seguir o vento</strong><small>8 min · Observe dunas e transporte de poeira.</small></div></div>
+        <div class="task" data-task="volcano"><span class="task-check">✓</span><div><strong>4 · Comparar o vulcão</strong><small>8 min · Visite o Olympus Mons e leia sua forma.</small></div></div>
+      </div>
+    </div>
+  </section>
+  <section class="panel">
+    <div class="panel-pad">
+      <span class="eyebrow">Instrumentos do geólogo</span>
+      <div class="tool-row">
+        <button class="tool" id="scanButton"><span class="ico">⌁</span>ESCÂNER DE CAMADAS</button>
+        <button class="tool" id="hammerButton"><span class="ico">⚒</span>MARTELO GEOLÓGICO</button>
+        <button class="tool" id="dustButton"><span class="ico">≋</span>TEMPESTADE DE POEIRA</button>
+        <button class="tool" id="jumpButton"><span class="ico">↑</span>TESTAR SALTO MARCIANO</button>
+      </div>
+    </div>
+  </section>
+</aside>
+
+<aside class="side" id="rightSide">
+  <section class="panel field-note compact">
+    <div class="panel-pad">
+      <div class="note-head"><span class="eyebrow">Caderno de campo</span><span class="mini-tag" id="noteTag">OBSERVAÇÃO</span></div>
+      <h2 id="noteTitle">O terreno conta uma história</h2>
+      <div class="note-body" id="noteBody">Aproxime-se dos marcadores luminosos e use o gatilho do controle ou clique com o mouse para investigar cada formação. Compare forma, posição e material antes de propor uma origem.</div>
+      <img class="note-image" id="noteImage" src="https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia21/pia21217/PIA21217.jpg" alt="Escarpa com camadas rochosas em Marte, imagem HiRISE da NASA" loading="lazy" />
+      <div class="photo-credit" id="photoCredit">NASA/JPL-Caltech/University of Arizona · HiRISE</div>
+    </div>
+  </section>
+  <section class="panel">
+    <div class="panel-pad">
+      <span class="eyebrow">Hipóteses para testar</span>
+      <div class="evidence-list">
+        <div class="evidence"><i></i><span>Água antiga pode deixar canais, deltas e minerais.</span></div>
+        <div class="evidence"><i></i><span>Vento transporta areia e remodela o relevo.</span></div>
+        <div class="evidence"><i></i><span>Fraturas e vulcanismo constroem grandes estruturas.</span></div>
+      </div>
+      <button class="btn ghost small" style="width:100%;margin-top:12px" id="quizButton" disabled>DESBLOQUEAR QUIZ FINAL · 0/4</button>
+    </div>
+  </section>
+</aside>
+
+<div class="bottomDock">
+  <div class="dock-location"><label>Estação geológica</label>
+    <select id="stationSelect"><option value="valles">Valles Marineris · cânion</option><option value="olympus">Olympus Mons · vulcão-escudo</option></select>
+  </div>
+  <div class="dock-divider"></div>
+  <div class="dock-actions">
+    <button class="dock-icon" id="teleportBase" title="Ponto de observação inicial">⌖</button>
+    <button class="dock-icon" id="teleportHigh" title="Mirante do cânion / cume do vulcão">▴</button>
+    <button class="dock-icon" id="telemetryButton" title="Dados da expedição">▤</button>
+    <button class="dock-icon" id="sourcesButton" title="Fontes científicas">ⓘ</button>
+  </div>
+  <div class="dock-divider"></div>
+  <div class="timer" id="elapsedTimer">00:00</div>
+  <button class="btn primary small" id="startButton">INICIAR</button>
+</div>
+<div class="hint" id="desktopHint">W A S D · mover &nbsp; | &nbsp; arraste para olhar &nbsp; | &nbsp; clique nos marcadores &nbsp; | &nbsp; ESPAÇO para saltar</div>
+<div class="sources">MODELO DIDÁTICO · DADOS E REFERÊNCIAS NO CADERNO DE CAMPO</div>
+<div class="toast" id="toast"></div>
+<div id="xrHelp" class="xr-only">ANALÓGICO ESQUERDO: mover · DIREITO: virar · GATILHO: investigar · A: escâner · B: martelo · X: salto · Y: poeira</div>
+
+<div class="intro" id="intro">
+  <div class="intro-card">
+    <div class="intro-kicker"><span>◉</span> MISSÃO CIENTÍFICA · MARTE / 01</div>
+    <h1>Leia a paisagem.<br><em>Reconstrua o planeta.</em></h1>
+    <p>Você é parte de uma equipe de geologia planetária. Explore um cânion colossal, procure registros de erosão, investigue a ação do vento e compare a topografia de Marte com a da Terra. Cada formação é uma pista sobre a história ambiental do planeta.</p>
+    <div class="intro-metrics">
+      <div><strong>3,71</strong><span>m/s² · gravidade</span></div>
+      <div><strong>40 min</strong><span>tempo sugerido</span></div>
+      <div><strong>2 locais</strong><span>estações 3D</span></div>
+    </div>
+    <div class="intro-actions">
+      <button class="btn primary" id="beginMission">INICIAR EXPEDIÇÃO →</button>
+      <button class="btn ghost" id="introVR">ENTRAR DIRETO EM VR</button>
+    </div>
+    <div class="smallprint">Compatível com navegadores de desktop e tablet. Para VR, use o navegador PICO com a página hospedada em HTTPS. A disponibilidade da sessão depende da versão do sistema e do navegador.</div>
+  </div>
+</div>
+
+<div class="modal" id="quizModal" role="dialog" aria-modal="true" aria-labelledby="quizHeading">
+  <div class="modal-card">
+    <div class="modal-top"><div><div class="eyebrow">Avaliação de aprendizagem · 7 questões</div><h2 id="quizHeading">Relatório do geólogo</h2><p>Use as observações da expedição para interpretar os processos que moldaram Marte. Selecione uma alternativa por questão.</p></div><button class="close" data-close="quizModal" aria-label="Fechar">×</button></div>
+    <div id="quizQuestions"></div>
+    <div class="quiz-result" id="quizResult"><strong id="quizScore">0/6</strong><div id="quizFeedback" style="font-size:11px;line-height:1.5;color:#c5d6c9;margin-top:5px"></div></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:15px"><button class="btn ghost" id="retryQuiz">REFAZER</button><button class="btn primary" id="submitQuiz">CORRIGIR RESPOSTAS</button></div>
+  </div>
+</div>
+
+<div class="modal" id="infoModal" role="dialog" aria-modal="true">
+  <div class="modal-card">
+    <div class="modal-top"><div><div class="eyebrow" id="infoEyebrow">DADOS DA EXPEDIÇÃO</div><h2 id="infoHeading">Painel científico</h2><p id="infoContent"></p></div><button class="close" data-close="infoModal">×</button></div>
+    <div id="infoExtra" style="margin-top:15px"></div>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+const $ = (id) => document.getElementById(id);
+const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
+const lerp = (a,b,t) => a+(b-a)*t;
+const smooth = (a,b,x) => { const t=clamp((x-a)/(b-a),0,1); return t*t*(3-2*t); };
+const fmt = (n) => n.toLocaleString('pt-BR');
+
+const world = $('world');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x9a5941);
+scene.fog = new THREE.FogExp2(0x9a5941, 0.000045);
+const camera = new THREE.PerspectiveCamera(72, innerWidth/innerHeight, 0.1, 1200000);
+camera.position.set(0,1.7,0);
+const rig = new THREE.Group(); rig.add(camera); scene.add(rig);
+const renderer = new THREE.WebGLRenderer({canvas:world,antialias:true,alpha:false,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.45));
+renderer.setSize(innerWidth,innerHeight,false);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.18;
+renderer.xr.enabled = true;
+try{ renderer.xr.setReferenceSpaceType('local-floor'); }catch(e){}
+
+const hemi = new THREE.HemisphereLight(0xffd2aa,0x3d2017,1.15); scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xffd4a4,2.15); sun.position.set(-18000,25000,-26000); scene.add(sun);
+const fill = new THREE.DirectionalLight(0x8b9bb4,.28); fill.position.set(12000,7000,16000); scene.add(fill);
+
+// Sky shader: atmospheric haze with a warm horizon, rather than a flat background.
+const sky = new THREE.Mesh(new THREE.SphereGeometry(700000,32,20),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,vertexShader:`varying vec3 vP; void main(){ vec4 w=modelMatrix*vec4(position,1.0); vP=w.xyz; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,fragmentShader:`varying vec3 vP; void main(){ float h=normalize(vP).y; vec3 low=vec3(.43,.20,.13); vec3 mid=vec3(.69,.38,.24); vec3 high=vec3(.20,.16,.17); float a=smoothstep(-.12,.32,h); float b=smoothstep(.25,.88,h); vec3 c=mix(low,mid,a); c=mix(c,high,b); gl_FragColor=vec4(c,1.0); }`}));
+scene.add(sky);
+
+let terrainMesh=null, geologyGroup=null, markerGroup=null, rockGroup=null, dustPoints=null, dustData=null, scanRing=null;
+let currentStation='valles', started=false, elapsed=0, lastTime=performance.now(), jumpVelocity=0, isJumping=false;
+let yaw=0, pitch=-0.04, dragging=false, lastPointer={x:0,y:0}, lastTap=0;
+let dustEnabled=true, activeTool='inspect', invertStickY=false;
+let markerHits=[], markersById={};
+const completed = new Set();
+const keys = {};
+let toastTimer=0;
+
+const stations={
+  valles:{title:'Valles Marineris',desc:'Investigue um sistema de cânions gigantes, suas escarpas, camadas expostas e depósitos de encosta.',relief:'9,3 km',scale:'3.870 km',width:24000,depth:14500,segX:260,segZ:190,spawn:{x:0,z:0},fog:0.00005},
+  olympus:{title:'Olympus Mons',desc:'Leia a forma de um vulcão-escudo colossal, observe a caldeira e os extensos fluxos de lava.',relief:'≈26 km',scale:'≈600 km',width:720000,depth:720000,segX:220,segZ:220,spawn:{x:285000,z:0},fog:0.0000025}
+};
+
+function seeded(i){ const x=Math.sin(i*127.1+311.7)*43758.5453; return x-Math.floor(x); }
+function noise2(x,z){return (Math.sin(x*.0019+Math.sin(z*.0011)*1.7)+Math.sin(z*.0028+x*.0007)*.55+Math.sin((x+z)*.006)*.22)/1.77;}
+function terrainHeight(x,z,station=currentStation){
+  if(station==='valles'){
+    const a=Math.abs(z);
+    const wall=smooth(690,2350,a);
+    const terraces=75*Math.sin((a-850)*.012)*smooth(760,1100,a)*(1-smooth(2200,2700,a));
+    const rough=noise2(x,z)* (16+wall*40);
+    const longRidges=24*Math.sin(x*.0008+z*.0004)*wall;
+    const floorDunes= a<850 ? 5*Math.sin(x*.0035+z*.002)*Math.cos(z*.004) : 0;
+    return Math.max(-12,9300*wall + terraces + rough + longRidges + floorDunes);
+  }
+  const r=Math.sqrt(x*x+z*z);
+  const shield=26000*Math.pow(Math.max(0,1-r/305000),1.55);
+  const calderaR=Math.sqrt(x*x+z*z);
+  const caldera=-3200*Math.exp(-Math.pow(calderaR/20500,4));
+  const rim=850*Math.exp(-Math.pow((calderaR-24500)/5200,2));
+  const flows=170*Math.sin(r*.00022+Math.atan2(z,x)*4)*Math.pow(Math.max(0,1-r/300000),1.2);
+  const rough=noise2(x,z)* (80+shield*.004);
+  return Math.max(-10,shield+caldera+rim+flows+rough);
+}
+
+function makeGroundTexture(baseA,baseB){
+  const c=document.createElement('canvas'); c.width=512;c.height=512;
+  const ctx=c.getContext('2d'); const img=ctx.createImageData(512,512);
+  for(let y=0;y<512;y++) for(let x=0;x<512;x++){
+    const i=(y*512+x)*4; const n=(seeded(x*3+y*5)-.5)*34 + Math.sin(x*.07+y*.031)*7;
+    img.data[i]=clamp(baseA[0]+n,0,255); img.data[i+1]=clamp(baseA[1]+n*.65,0,255); img.data[i+2]=clamp(baseA[2]+n*.38,0,255); img.data[i+3]=255;
+  }
+  ctx.putImageData(img,0,0);
+  // Fine stratified streaks and dark wind ripples.
+  for(let i=0;i<250;i++){
+    const y=seeded(i+99)*512;
+    ctx.strokeStyle=i%3===0?'rgba(48,29,23,.22)':'rgba(245,190,137,.11)';
+    ctx.lineWidth=.4+seeded(i+201)*2;
+    ctx.beginPath();ctx.moveTo(0,y);ctx.bezierCurveTo(130,y-16,330,y+18,512,y+seeded(i+501)*22);ctx.stroke();
+  }
+  for(let i=0;i<500;i++){
+    ctx.fillStyle=`rgba(40,25,20,${.05+seeded(i+800)*.15})`;
+    const x=seeded(i+1200)*512,y=seeded(i+1800)*512,r=.4+seeded(i+2400)*2;
+    ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+  }
+  const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.repeat.set(18,18);tex.anisotropy=4;return tex;
+}
+const marsTexture=makeGroundTexture([139,72,48],[0,0,0]);
+const olympusTexture=makeGroundTexture([109,67,51],[0,0,0]);
+
+function clearGroup(g){ if(!g)return; scene.remove(g); g.traverse(o=>{if(o.geometry)o.geometry.dispose(); if(o.material){ if(Array.isArray(o.material))o.material.forEach(m=>m.dispose()); else o.material.dispose();}}); }
+function buildTerrain(station){
+  if(terrainMesh){scene.remove(terrainMesh);terrainMesh.geometry.dispose();terrainMesh.material.dispose();terrainMesh=null;}
+  const cfg=stations[station], w=cfg.width,d=cfg.depth,sx=cfg.segX,sz=cfg.segZ;
+  const positions=new Float32Array((sx+1)*(sz+1)*3), colors=new Float32Array((sx+1)*(sz+1)*3), uvs=new Float32Array((sx+1)*(sz+1)*2);
+  let p=0, ci=0, ui=0;
+  const col=new THREE.Color();
+  for(let iz=0;iz<=sz;iz++){
+    const z=(iz/sz-.5)*d;
+    for(let ix=0;ix<=sx;ix++){
+      const x=(ix/sx-.5)*w; const h=terrainHeight(x,z,station);
+      positions[p++]=x;positions[p++]=h;positions[p++]=z;
+      const n=noise2(x,z); let rgb;
+      if(station==='valles'){
+        const t=clamp(h/9300,0,1); rgb=[.39+t*.24+n*.045,.20+t*.12+n*.028,.13+t*.075+n*.02];
+        if(Math.abs(z)<900)rgb=[.34+n*.035,.17+n*.02,.11+n*.016];
+      }else{
+        const t=clamp(h/26000,0,1); rgb=[.34+t*.16+n*.035,.22+t*.10+n*.024,.17+t*.07+n*.018];
+        if(Math.sqrt(x*x+z*z)<26000)rgb=[.24+n*.02,.16+n*.018,.13+n*.015];
+      }
+      colors[ci++]=rgb[0];colors[ci++]=rgb[1];colors[ci++]=rgb[2];
+      uvs[ui++]=ix/sx;uvs[ui++]=iz/sz;
+    }
+  }
+  const indices=[];
+  for(let z=0;z<sz;z++)for(let x=0;x<sx;x++){
+    const a=z*(sx+1)+x,b=a+sx+1,c=b+1,e=a+1;indices.push(a,b,e,b,c,e);
+  }
+  const geo=new THREE.BufferGeometry();geo.setIndex(indices);geo.setAttribute('position',new THREE.BufferAttribute(positions,3));geo.setAttribute('color',new THREE.BufferAttribute(colors,3));geo.setAttribute('uv',new THREE.BufferAttribute(uvs,2));geo.computeVertexNormals();
+  const texture=station==='valles'?marsTexture:olympusTexture;texture.repeat.set(station==='valles'?18:260,station==='valles'?18:260);
+  const mat=new THREE.MeshStandardMaterial({map:texture,vertexColors:true,roughness:.98,metalness:0});
+  terrainMesh=new THREE.Mesh(geo,mat);terrainMesh.receiveShadow=false;scene.add(terrainMesh);
+  scene.fog.color.set(station==='valles'?0x9b6046:0x90614e);scene.fog.density=cfg.fog;
+}
+
+function makeLabelSprite(text){
+  const c=document.createElement('canvas');c.width=512;c.height=128;const ctx=c.getContext('2d');
+  ctx.fillStyle='rgba(18,13,11,.82)';ctx.beginPath();ctx.roundRect(5,8,502,112,18);ctx.fill();
+  ctx.strokeStyle='rgba(240,182,107,.72)';ctx.lineWidth=3;ctx.stroke();
+  ctx.fillStyle='#f5dfca';ctx.font='700 30px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,256,67,470);
+  const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;
+  const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false}));sprite.scale.set(115,29,1);return sprite;
+}
+
+const evidence={
+  layers:{title:'Estratos expostos',tag:'SEDIMENTO / ROCHA',text:'As paredes do cânion expõem unidades rochosas e superfícies em diferentes níveis. Camadas podem registrar deposição, alteração química e episódios de exposição. Em maio de 2026, a NASA destacou como o tamanho dos cristais de hematita em amostras da cratera Gale pode ajudar a reconstruir duração e temperatura de episódios de água antiga. Geólogos comparam cor, textura, espessura e continuidade — não apenas a cor isolada.',question:'Que observação ajudaria a distinguir uma camada sedimentar de uma superfície de fratura?',image:'https://static.uahirise.org/images/wallpaper/2560/PSP_001456_1695.jpg',credit:'HiRISE / University of Arizona · depósitos em camadas na região de Valles Marineris'},
+  mass:{title:'Escarpa e deslizamento',tag:'GRAVIDADE / MOVIMENTO DE MASSA',text:'Blocos e detritos na base de escarpas podem resultar de colapsos e deslizamentos. A gravidade marciana é menor que a terrestre, mas ainda conduz o movimento de material encosta abaixo. A forma do depósito, o tamanho dos blocos e a relação com a parede ajudam a reconstruir o evento.',question:'Um leque de blocos ao pé de uma parede íngreme pode indicar qual processo?',image:'https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia21/pia21217/PIA21217.jpg',credit:'NASA/JPL-Caltech/University of Arizona · escarpa em Ganges Chasma'},
+  wind:{title:'Dunas e abrasão eólica',tag:'VENTO / REGOLITO',text:'A atmosfera de Marte é muito rarefeita, mas o vento consegue mobilizar grãos finos e poeira, sobretudo quando há rajadas e tempestades. Ondulações e dunas registram a direção de transporte; partículas em movimento também desgastam rochas por abrasão. A poeira altera a aparência e pode cobrir evidências mais antigas.',question:'Qual feição é um indicador direto de transporte sedimentar pelo vento?',image:'https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia22/pia22181/PIA22181.jpg',credit:'NASA/JPL-Caltech/University of Arizona · depósitos e formas eólicas em Marte'},
+  volcano:{title:'Olympus Mons: vulcão-escudo',tag:'VULCANISMO / LAVA',text:'Olympus Mons é um enorme vulcão-escudo, construído por sucessivos derrames de lava basáltica relativamente fluida. Seu perfil amplo e suas encostas suaves contrastam com vulcões cônicos comuns em imagens terrestres. A caldeira do cume registra episódios de colapso associados ao esvaziamento de câmaras magmáticas.',question:'Que processo constrói principalmente um vulcão-escudo?',image:'https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia22/pia22181/PIA22181.jpg',credit:'NASA/JPL-Caltech/University of Arizona · aureola de detritos ao redor de Olympus Mons'},
+  water:{title:'Água antiga: como reconhecer?',tag:'HIDROLOGIA PLANETÁRIA',text:'Redes de vales, deltas, leitos de lagos, minerais de argila, carbonatos e veios minerais podem registrar interações antigas com água. Em setembro de 2026, a NASA divulgou resultados do Perseverance indicando pelo menos três episódios distintos de interação entre água e rochas na Margin Unit, em Jezero. Atenção: Jezero e Gale são exemplos comparativos de outros locais de Marte; essas descobertas não provam, por si só, que Valles Marineris tenha sido escavado por rios.',question:'Qual conjunto de evidências fortalece a hipótese de água líquida no passado?',image:'https://assets.science.nasa.gov/dynamicimage/assets/science/psd/photojournal/pia/pia02/pia02895/PIA02895.jpg',credit:'NASA/JPL/Arizona State University · mosaico topográfico de Valles Marineris'}
+};
+
+function makeMarker(id,x,z,label,kind){
+  const y=terrainHeight(x,z,currentStation)+10;
+  const g=new THREE.Group();g.position.set(x,y,z);g.userData.markerId=id;
+  const color=kind==='water'?0x89b8c5:kind==='wind'?0xf3c77d:kind==='volcano'?0xe57c50:0xf0ad75;
+  const core=new THREE.Mesh(new THREE.OctahedronGeometry(currentStation==='olympus'?900:16,0),new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:1.1,roughness:.3}));g.add(core);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(currentStation==='olympus'?1500:31,currentStation==='olympus'?30:2.8,8,36),new THREE.MeshBasicMaterial({color,transparent:true,opacity:.8}));ring.rotation.x=Math.PI/2;g.add(ring);
+  const labelSprite=makeLabelSprite(label);labelSprite.position.y=currentStation==='olympus'?3600:75;g.add(labelSprite);
+  g.userData.markerId=id;g.userData.baseY=y;g.userData.phase=seeded(id.length*13+x*.001);
+  markerGroup.add(g);markerHits.push(core,ring);markersById[id]=g;
+  return g;
+}
+
+function addRockField(station){
+  if(rockGroup)clearGroup(rockGroup);rockGroup=new THREE.Group();
+  const cfg=stations[station], ox=cfg.spawn.x,oz=cfg.spawn.z;
+  const geo=new THREE.DodecahedronGeometry(1,0);
+  const materials=[0x68402e,0x82513a,0x9d6344,0x50342b,0xb17852].map(c=>new THREE.MeshStandardMaterial({color:c,roughness:1}));
+  const count=station==='valles'?190:150;
+  for(let i=0;i<count;i++){
+    const a=seeded(i+12)*Math.PI*2, r=35+Math.pow(seeded(i+33),.7)*(station==='valles'?650:900);
+    const x=ox+Math.cos(a)*r,z=oz+Math.sin(a)*r;
+    const size=(station==='valles'?1.5:18)+seeded(i+55)*(station==='valles'?12:70);
+    const m=new THREE.Mesh(geo,materials[i%materials.length]);m.position.set(x,terrainHeight(x,z,station)+size*.35,z);m.scale.set(size*(.65+seeded(i+99)),size*(.5+seeded(i+111)),size*(.7+seeded(i+131)));m.rotation.set(seeded(i+150)*2,seeded(i+170)*4,seeded(i+190)*2);rockGroup.add(m);
+  }
+  scene.add(rockGroup);
+}
+
+function addGeologyFeatures(station){
+  if(geologyGroup)clearGroup(geologyGroup);geologyGroup=new THREE.Group();
+  if(station==='valles'){
+    // Long, thin lines on the canyon faces illustrate stratigraphic horizons.
+    for(const sign of [-1,1]){
+      for(const level of [1300,2700,4200,5700,7300,8500]){
+        const points=[];const zAbs=780+(level/9300)*1540;
+        for(let i=0;i<=80;i++){
+          const x=-10500+i*262.5;const z=sign*(zAbs+Math.sin(i*.19+level)*32);
+          points.push(new THREE.Vector3(x,terrainHeight(x,z,station)+4,z));
+        }
+        const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints(points),new THREE.LineBasicMaterial({color:level<4000?0xb77c5c:0xd8aa78,transparent:true,opacity:.28}));geologyGroup.add(line);
+      }
+    }
+    // Wind ripples on the canyon floor.
+    for(let row=0;row<20;row++){
+      const z=-760+row*78;const pts=[];
+      for(let i=0;i<=34;i++){const x=-2500+i*145;const zz=z+Math.sin(i*.37+row*.8)*18;pts.push(new THREE.Vector3(x,terrainHeight(x,zz,station)+3,zz));}
+      geologyGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:0xd7a16b,transparent:true,opacity:.28})));
+    }
+    // A debris apron at the foot of the eastern scarp.
+    for(let i=0;i<95;i++){
+      const x=1800+seeded(i+700)*2400,z=950+seeded(i+900)*550,size=7+seeded(i+1200)*24;
+      const rock=new THREE.Mesh(new THREE.IcosahedronGeometry(size,0),new THREE.MeshStandardMaterial({color:i%2?0x77503c:0x9a684b,roughness:1}));
+      rock.position.set(x,terrainHeight(x,z,station)+size*.35,z);rock.rotation.set(i*.4,i*.7,i*.2);geologyGroup.add(rock);
+    }
+    makeMarker('layers',-1100,1000,'ESTRATOS EXPOSTOS','layers');
+    makeMarker('mass',2450,1500,'DEPÓSITO DE ENCOSTA','mass');
+    makeMarker('wind',750,-430,'ONDULAÇÕES EÓLICAS','wind');
+    makeMarker('water',-3800,450,'FORMAS DE EROSÃO','water');
+  }else{
+    // Flow-front traces around the shield volcano.
+    for(let band=0;band<7;band++){
+      const r=65000+band*28000;const pts=[];
+      for(let i=0;i<=180;i++){
+        const a=i/180*Math.PI*2;const rr=r+Math.sin(a*7+band)*1800;
+        const x=Math.cos(a)*rr,z=Math.sin(a)*rr;pts.push(new THREE.Vector3(x,terrainHeight(x,z,station)+25,z));
+      }
+      geologyGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:0x5b3930,transparent:true,opacity:.25})));
+    }
+    makeMarker('volcano',285000,0,'ESCUDO VULCÂNICO','volcano');
+    makeMarker('caldera',0,0,'CALDEIRA DO CUME','volcano');
+    makeMarker('flows',-100000,135000,'FLUXOS DE LAVA','layers');
+    makeMarker('aureole',175000,-140000,'AURÉOLA DE DETRITOS','mass');
+  }
+  scene.add(geologyGroup);
+  scene.add(markerGroup);
+}
+
+function makeDust(){
+  if(dustPoints){scene.remove(dustPoints);dustPoints.geometry.dispose();dustPoints.material.dispose();}
+  const count= currentStation==='olympus'?360:540;const arr=new Float32Array(count*3);const vel=[];
+  const cfg=stations[currentStation], ox=cfg.spawn.x,oz=cfg.spawn.z;
+  for(let i=0;i<count;i++){
+    arr[i*3]=ox+(seeded(i+2)-.5)*(currentStation==='valles'?2200:6000);
+    arr[i*3+1]=terrainHeight(arr[i*3],oz,currentStation)+10+seeded(i+7)*(currentStation==='valles'?160:600);
+    arr[i*3+2]=oz+(seeded(i+9)-.5)*(currentStation==='valles'?2200:6000);
+    vel.push([.8+seeded(i+12)*2,(seeded(i+18)-.5)*.25,.2+seeded(i+22)]);
+  }
+  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(arr,3));
+  const mat=new THREE.PointsMaterial({color:0xe1a477,size:currentStation==='valles'?4.5:17,transparent:true,opacity:.28,depthWrite:false,sizeAttenuation:true});
+  dustPoints=new THREE.Points(geo,mat);dustPoints.visible=dustEnabled;scene.add(dustPoints);dustData={arr,vel,count};
+}
+
+function rebuildStation(station){
+  currentStation=station;const cfg=stations[station];
+  if(markerGroup)clearGroup(markerGroup);markerGroup=new THREE.Group();markerHits=[];markersById={};
+  buildTerrain(station);addGeologyFeatures(station);addRockField(station);makeDust();
+  const x=cfg.spawn.x,z=cfg.spawn.z;rig.position.set(x,terrainHeight(x,z,station),z);rig.rotation.set(0,station==='valles'?0:Math.PI/2,0);camera.position.set(0,renderer.xr.isPresenting?0:1.7,0);camera.rotation.set(0,0,0);yaw=rig.rotation.y;pitch=-.04;
+  $('stationTitle').textContent=cfg.title;$('stationDesc').textContent=cfg.desc;$('statRelief').textContent=cfg.relief;$('statScale').textContent=cfg.scale;$('stationSelect').value=station;
+  if(station==='olympus'){
+    $('noteTitle').textContent='O maior vulcão-escudo conhecido';$('noteTag').textContent='VULCANISMO';$('noteBody').innerHTML='Olympus Mons se eleva cerca de <strong>26 km</strong> acima das planícies próximas e alcança aproximadamente 600 km de largura. O perfil amplo resulta de sucessivos derrames de lava. Use os pontos de observação para comparar base, encosta e caldeira.';
+    $('noteImage').src='https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia22/pia22181/PIA22181.jpg';$('photoCredit').textContent='NASA/JPL-Caltech/University of Arizona · aureola de Olympus Mons';
+    setTimeout(()=>toast('Olympus Mons: use os marcadores para alternar entre base, encosta e caldeira.'),500);
+  }else{
+    $('noteTitle').textContent='O terreno conta uma história';$('noteTag').textContent='OBSERVAÇÃO';$('noteBody').textContent='Aproxime-se dos marcadores luminosos e use o gatilho do controle ou clique com o mouse para investigar cada formação. Compare forma, posição e material antes de propor uma origem.';
+    $('noteImage').src='https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia21/pia21217/PIA21217.jpg';$('photoCredit').textContent='NASA/JPL-Caltech/University of Arizona · HiRISE';
+  }
+  setTimeout(()=>{if(terrainMesh)terrainMesh.geometry.computeVertexNormals();},20);
+}
+
+function setNote(id){
+  const e=evidence[id]||evidence.water;
+  $('noteTitle').textContent=e.title;$('noteTag').textContent=e.tag;$('noteBody').textContent=e.text;$('noteImage').src=e.image;$('photoCredit').textContent=e.credit;
+  if(id==='layers'||id==='mass'||id==='wind')markTask(id);
+  if(id==='water')markTask('layers');
+  if(id==='volcano')markTask('volcano');
+  showVRPanel(e.title,e.text);
+  toast('Registro adicionado ao caderno de campo: '+e.title+'.');
+}
+function markTask(id){
+  if(!['layers','mass','wind','volcano'].includes(id))return;
+  if(!completed.has(id)){completed.add(id);updateProgress();}
+}
+function updateProgress(){
+  const n=completed.size;$('taskCount').textContent=n+'/4';$('progressFill').style.width=(n/4*100)+'%';$('quizButton').disabled=n<4;$('quizButton').textContent=n<4?`DESBLOQUEAR QUIZ FINAL · ${n}/4`:'INICIAR QUIZ FINAL →';
+  document.querySelectorAll('.task').forEach(el=>{const done=completed.has(el.dataset.task);el.classList.toggle('done',done);el.querySelector('.task-check').textContent=done?'✓':'';});
+  if(n===4)toast('Expedição de campo concluída. O quiz final foi desbloqueado.');
+}
+
+function toast(message){$('toast').textContent=message;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),2900);}
+
+function scan(){
+  activeTool='scan';$('scanButton').classList.add('active');
+  if(scanRing){scene.remove(scanRing);scanRing.geometry.dispose();scanRing.material.dispose();}
+  const r=currentStation==='valles'?1:80;scanRing=new THREE.Mesh(new THREE.RingGeometry(.92,1,72),new THREE.MeshBasicMaterial({color:0x8ed3c8,transparent:true,opacity:.8,side:THREE.DoubleSide,depthWrite:false}));scanRing.rotation.x=-Math.PI/2;scanRing.position.set(rig.position.x,terrainHeight(rig.position.x,rig.position.z,currentStation)+4,rig.position.z);scanRing.scale.setScalar(1);scene.add(scanRing);scanRing.userData.life=0;
+  $('noteTitle').textContent='Varredura espectral em andamento';$('noteTag').textContent='ESCÂNER ATIVO';$('noteBody').innerHTML='O escâner está percorrendo a superfície. Observe diferenças de cor, textura, fraturas e continuidade das camadas. <strong>Uma assinatura visual é uma pista</strong>, mas a identificação mineral exige instrumentos e dados adicionais.';
+  showVRPanel('ESCÂNER ATIVO','Observe texturas, fraturas, camadas e variações de tonalidade. A cor isolada não identifica um mineral.');
+  toast('Escâner ativado. A varredura destaca a superfície ao seu redor.');
+}
+function hammer(){
+  activeTool='hammer';$('hammerButton').classList.add('active');
+  const dir=new THREE.Vector3(0,0,-1).applyQuaternion(camera.getWorldQuaternion(new THREE.Quaternion()));
+  const pos=camera.getWorldPosition(new THREE.Vector3()).add(dir.multiplyScalar(7));
+  const size=currentStation==='valles'?4:24;
+  const sample=new THREE.Mesh(new THREE.IcosahedronGeometry(size,1),new THREE.MeshStandardMaterial({color:0xc18a60,roughness:1,emissive:0x3c1b10,emissiveIntensity:.12}));sample.position.copy(pos);scene.add(sample);
+  const pieces=[];for(let i=0;i<7;i++){const f=new THREE.Mesh(new THREE.TetrahedronGeometry(size*.36),new THREE.MeshStandardMaterial({color:i%2?0x916149:0xd09b6d,roughness:1}));f.position.copy(pos);scene.add(f);pieces.push({mesh:f,vel:new THREE.Vector3((seeded(i+7)-.5)*3,1+seeded(i+9)*2,(seeded(i+12)-.5)*3)});}
+  let t=0;const tick=()=>{t+=.03;sample.rotation.y+=.04;sample.scale.setScalar(Math.max(.01,1-t*.7));pieces.forEach(p=>{p.mesh.position.add(p.vel);p.vel.y-=.11;p.mesh.rotation.x+=.08;});if(t<1.4)requestAnimationFrame(tick);else{scene.remove(sample);pieces.forEach(p=>scene.remove(p.mesh));}};tick();
+  $('noteTitle').textContent='Amostra geológica coletada';$('noteTag').textContent='ANÁLISE DE CAMPO';$('noteBody').innerHTML='A fratura expõe uma superfície interna diferente da poeira superficial. Compare <strong>granulação, cor, coesão e planos de fratura</strong>. O martelo é uma metáfora de coleta: no trabalho científico, a identificação exige contexto e análise instrumental.';
+  showVRPanel('AMOSTRA COLETADA','Compare a superfície interna com a película de poeira. Textura e fratura são pistas, não uma identificação mineral definitiva.');
+  toast('Amostra simulada coletada. Registre as propriedades antes de interpretar.');
+}
+function toggleDust(){dustEnabled=!dustEnabled;if(dustPoints)dustPoints.visible=dustEnabled;$('dustButton').classList.toggle('active',dustEnabled);toast(dustEnabled?'Partículas de poeira ativadas.':'Partículas de poeira pausadas.');}
+function jump(){if(isJumping)return;jumpVelocity=3.0;isJumping=true;toast('Salto iniciado: mesma velocidade inicial, menor gravidade.');}
+
+// A compact world-space information panel remains readable inside immersive VR.
+const vrCanvas=document.createElement('canvas');vrCanvas.width=1024;vrCanvas.height=512;const vrCtx=vrCanvas.getContext('2d');
+const vrTexture=new THREE.CanvasTexture(vrCanvas);vrTexture.colorSpace=THREE.SRGBColorSpace;
+const vrPanel=new THREE.Mesh(new THREE.PlaneGeometry(1.65,.82),new THREE.MeshBasicMaterial({map:vrTexture,transparent:true,depthWrite:false,side:THREE.DoubleSide}));
+vrPanel.position.set(0,-.56,-2.35);vrPanel.visible=false;camera.add(vrPanel);
+function showVRPanel(title,body){
+  vrCtx.clearRect(0,0,1024,512);vrCtx.fillStyle='rgba(16,12,10,.9)';vrCtx.beginPath();vrCtx.roundRect(12,12,1000,488,28);vrCtx.fill();
+  vrCtx.strokeStyle='rgba(236,164,108,.8)';vrCtx.lineWidth=4;vrCtx.stroke();
+  vrCtx.fillStyle='#e7a16d';vrCtx.font='700 27px system-ui';vrCtx.fillText('MARS FIELD LAB  /  CADERNO DE CAMPO',48,68);
+  vrCtx.fillStyle='#fff0e3';vrCtx.font='700 46px system-ui';vrCtx.fillText(title.toUpperCase().slice(0,32),48,146);
+  vrCtx.fillStyle='#d3c0b0';vrCtx.font='28px system-ui';
+  const words=body.replace(/<[^>]*>/g,'').split(' ');let line='',y=213;
+  for(const w of words){const test=line+w+' ';if(vrCtx.measureText(test).width>910){vrCtx.fillText(line,48,y);line=w+' ';y+=43;if(y>425)break;}else line=test;}
+  if(y<=425)vrCtx.fillText(line,48,y);
+  vrTexture.needsUpdate=true;
+}
+showVRPanel('EXPEDIÇÃO MARCIANA','Aponte o controle para um marcador e pressione o gatilho para investigar. Analógico esquerdo move. Botões de ação ativam instrumentos.');
+
+// Scanner marker selection.
+function selectMarker(id){
+  if(id==='layers'||id==='mass'||id==='wind'||id==='volcano'||id==='water')setNote(id);
+  else if(id==='caldera'){
+    $('noteTitle').textContent='Caldeira do cume';$('noteTag').textContent='COLAPSO VULCÂNICO';$('noteBody').textContent='Depressões no topo de grandes vulcões podem resultar do colapso após esvaziamento parcial de reservatórios magmáticos. A caldeira é uma estrutura vulcânica, não uma cratera de impacto.';showVRPanel('CALDEIRA DO CUME','Depressão vulcânica associada a colapsos no topo. Compare sua geometria com crateras de impacto.');markTask('volcano');
+  }else if(id==='flows'){
+    $('noteTitle').textContent='Fluxos de lava';$('noteTag').textContent='VULCANISMO';$('noteBody').textContent='Fluxos sucessivos de lava basáltica construíram o amplo edifício do Olympus Mons. A repetição de derrames explica o perfil de vulcão-escudo.';showVRPanel('FLUXOS DE LAVA','Derrames sucessivos de lava fluida constroem um vulcão-escudo de base muito ampla.');markTask('volcano');
+  }else if(id==='aureole'){
+    $('noteTitle').textContent='Auréola de detritos';$('noteTag').textContent='DESLIZAMENTO';$('noteBody').textContent='Blocos gigantescos ao redor do Olympus Mons podem representar materiais que deslizaram de suas encostas e foram posteriormente retrabalhados pelo vento. A forma do depósito revela a sequência de processos.';showVRPanel('AURÉOLA DE DETRITOS','Grandes blocos podem ter deslizado das encostas e sido retrabalhados pelo vento.');markTask('mass');
+  }
+}
+const raycaster=new THREE.Raycaster();raycaster.far=60000;
+function selectFromRay(origin,direction){
+  raycaster.set(origin,direction);const hits=raycaster.intersectObjects(markerHits,false);
+  if(hits.length){const id=hits[0].object.parent.userData.markerId;selectMarker(id);return true;}return false;
+}
+function selectFromPointer(ev){
+  const rect=renderer.domElement.getBoundingClientRect();const mouse=new THREE.Vector2((ev.clientX-rect.left)/rect.width*2-1,-((ev.clientY-rect.top)/rect.height)*2+1);
+  raycaster.setFromCamera(mouse,camera);const hits=raycaster.intersectObjects(markerHits,false);if(hits.length){selectMarker(hits[0].object.parent.userData.markerId);return true;}return false;
+}
+
+world.addEventListener('pointerdown',e=>{dragging=true;lastPointer.x=e.clientX;lastPointer.y=e.clientY;lastPointer.moved=false;try{world.setPointerCapture(e.pointerId)}catch(_){};});
+world.addEventListener('pointermove',e=>{if(!dragging)return;const dx=e.clientX-lastPointer.x,dy=e.clientY-lastPointer.y;if(Math.abs(dx)+Math.abs(dy)>3)lastPointer.moved=true;lastPointer.x=e.clientX;lastPointer.y=e.clientY;yaw-=dx*.0032;pitch=clamp(pitch-dy*.0025,-1.25,1.1);rig.rotation.y=yaw;camera.rotation.x=pitch;});
+world.addEventListener('pointerup',e=>{if(dragging&&!lastPointer.moved)selectFromPointer(e);dragging=false;});
+world.addEventListener('pointercancel',()=>dragging=false);
+window.addEventListener('keydown',e=>{keys[e.code]=true;if(['Space','ArrowUp','ArrowDown'].includes(e.code))e.preventDefault();if(e.code==='Space')jump();if(e.code==='KeyQ')scan();if(e.code==='KeyE')hammer();if(e.code==='KeyF')toggleDust();});
+window.addEventListener('keyup',e=>keys[e.code]=false);
+
+let mobileTouch=null;
+world.addEventListener('touchstart',e=>{if(e.touches.length===1){mobileTouch={x:e.touches[0].clientX,y:e.touches[0].clientY,px:e.touches[0].clientX,py:e.touches[0].clientY};}}, {passive:true});
+world.addEventListener('touchmove',e=>{if(!mobileTouch||e.touches.length!==1)return;const t=e.touches[0],dx=t.clientX-mobileTouch.px,dy=t.clientY-mobileTouch.py;mobileTouch.px=t.clientX;mobileTouch.py=t.clientY;yaw-=dx*.004;pitch=clamp(pitch-dy*.003,-1.1,.9);rig.rotation.y=yaw;camera.rotation.x=pitch;},{passive:true});
+world.addEventListener('touchend',()=>{mobileTouch=null;},{passive:true});
+
+function getGround(x,z){return terrainHeight(x,z,currentStation);}
+function movePlayer(dt,moveX=0,moveY=0,useHeadDirection=false){
+  const forward=moveY,right=moveX;const speed=currentStation==='olympus'?18:5.2;
+  let fx=-Math.sin(yaw),fz=-Math.cos(yaw),rx=Math.cos(yaw),rz=-Math.sin(yaw);
+  if(useHeadDirection){const q=camera.getWorldQuaternion(new THREE.Quaternion());const f=new THREE.Vector3(0,0,-1).applyQuaternion(q);f.y=0;if(f.lengthSq()>.001)f.normalize();const r=new THREE.Vector3(1,0,0).applyQuaternion(q);r.y=0;if(r.lengthSq()>.001)r.normalize();fx=f.x;fz=f.z;rx=r.x;rz=r.z;}
+  const dx=(fx*forward+rx*right)*speed*dt;
+  const dz=(fz*forward+rz*right)*speed*dt;
+  const cfg=stations[currentStation];const nx=clamp(rig.position.x+dx,-cfg.width*.49,cfg.width*.49),nz=clamp(rig.position.z+dz,-cfg.depth*.49,cfg.depth*.49);
+  rig.position.x=nx;rig.position.z=nz;
+  const floor=getGround(nx,nz);if(isJumping){jumpVelocity-=3.71*dt;rig.position.y+=jumpVelocity*dt;if(rig.position.y<=floor){rig.position.y=floor;isJumping=false;jumpVelocity=0;}}else rig.position.y=floor;
+}
+
+// Three.js controller rays and generic gamepad mappings.
+const controllers=[];const controllerLines=[];let xrButtonPressed={};
+for(let i=0;i<2;i++){
+  const controller=renderer.xr.getController(i);rig.add(controller);controllers.push(controller);
+  const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0),new THREE.Vector3(0,0,-1)]),new THREE.LineBasicMaterial({color:0xffc18c,transparent:true,opacity:.75}));line.scale.z=18;controller.add(line);controllerLines.push(line);
+  controller.addEventListener('selectstart',()=>{const o=controller.getWorldPosition(new THREE.Vector3());const q=controller.getWorldQuaternion(new THREE.Quaternion());const d=new THREE.Vector3(0,0,-1).applyQuaternion(q).normalize();if(!selectFromRay(o,d)){if(activeTool==='scan')scan();else selectFromRay(camera.getWorldPosition(new THREE.Vector3()),camera.getWorldDirection(new THREE.Vector3()));}});
+}
+
+let controllerStates=new WeakMap();
+function teleportHighPoint(){
+  if(currentStation==='valles'){
+    const x=0,z=-3500;rig.position.set(x,terrainHeight(x,z,currentStation),z);yaw=Math.PI;rig.rotation.y=yaw;pitch=-.18;camera.rotation.x=pitch;
+    showVRPanel('MIRANTE DO CÂNION','Observe o desnível até o fundo. O perfil desta seção é didático e não substitui um mapa altimétrico local.');
+  }else{
+    const x=0,z=0;rig.position.set(x,terrainHeight(x,z,currentStation),z);yaw=0;rig.rotation.y=yaw;pitch=-.03;camera.rotation.x=pitch;
+    showVRPanel('CALDEIRA DE OLYMPUS','Observe a depressão do cume e as bordas do edifício vulcânico. Compare com crateras de impacto.');
+  }
+  camera.position.y=renderer.xr.isPresenting?0:1.7;
+}
+function updateXRControls(dt){
+  const session=renderer.xr.getSession();if(!session)return;
+  let mx=0,my=0;
+  for(const src of session.inputSources){
+    const gp=src.gamepad;if(!gp)continue;
+    const axes=gp.axes||[];let ax=0,ay=0;
+    if(axes.length>=4){ax=axes[2];ay=axes[3];}else if(axes.length>=2){ax=axes[0];ay=axes[1];}
+    const prev=controllerStates.get(src)||[];
+    if(src.handedness==='left'){
+      // PICO Neo 3 firmware/browser combinations can report the vertical stick axis reversed.
+      if(invertStickY)ay=-ay;
+      mx=ax;my=-ay;
+    }
+    if(src.handedness==='right'&&Math.abs(ax)>.16){yaw-=ax*1.35*dt;rig.rotation.y=yaw;}
+    // WebXR's xr-standard gamepad mapping: trigger remains the select event;
+    // face/auxiliary buttons provide tools. Device layouts can differ by firmware.
+    if(src.handedness==='right'&&gp.buttons?.[4]?.pressed&&!prev[4])scan();  // A
+    if(src.handedness==='right'&&gp.buttons?.[5]?.pressed&&!prev[5])hammer(); // B
+    if(src.handedness==='left'&&gp.buttons?.[4]?.pressed&&!prev[4])jump();   // X
+    if(src.handedness==='left'&&gp.buttons?.[5]?.pressed&&!prev[5])toggleDust(); // Y
+    controllerStates.set(src,(gp.buttons||[]).map(b=>b.pressed));
+  }
+  if(Math.abs(mx)+Math.abs(my)>.08)movePlayer(dt,clamp(mx,-1,1),clamp(my,-1,1),true);
+}
+
+function updateDust(dt,time){
+  if(!dustPoints||!dustData||!dustEnabled)return;
+  const p=dustData.arr, v=dustData.vel;const cfg=stations[currentStation],ox=cfg.spawn.x,oz=cfg.spawn.z,range=currentStation==='valles'?2400:7000;
+  for(let i=0;i<dustData.count;i++){
+    p[i*3]+=v[i][0]*dt*18;p[i*3+1]+=v[i][1]*dt*10+Math.sin(time*.001+i)*.04;p[i*3+2]+=v[i][2]*dt*8;
+    if(p[i*3]>ox+range/2){p[i*3]=ox-range/2;p[i*3+2]=oz+(seeded(i+time*.0001)-.5)*range;}
+    if(p[i*3+2]>oz+range/2)p[i*3+2]=oz-range/2;
+  }
+  dustPoints.geometry.attributes.position.needsUpdate=true;
+}
+
+function updateMarkers(time){
+  if(!markerGroup)return;
+  markerGroup.children.forEach(m=>{const pulse=1+.11*Math.sin(time*.002+m.userData.phase*6);m.children[0].scale.setScalar(pulse);m.children[1].rotation.z+=.002;});
+}
+function updateScan(dt){if(!scanRing)return;scanRing.userData.life+=dt;const t=scanRing.userData.life;const scale=1+t*(currentStation==='valles'?150:9000);scanRing.scale.set(scale,scale,scale);scanRing.material.opacity=Math.max(0,.8-t*.55);if(t>1.5){scene.remove(scanRing);scanRing.geometry.dispose();scanRing.material.dispose();scanRing=null;}}
+
+function animate(now){
+  const dt=Math.min(.05,(now-lastTime)/1000||.016);lastTime=now;
+  if(started){elapsed+=dt;const sec=Math.floor(elapsed);$('elapsedTimer').textContent=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');}
+  if(renderer.xr.isPresenting){updateXRControls(dt);}else{
+    let f=0,s=0;if(keys.KeyW||keys.ArrowUp)f+=1;if(keys.KeyS||keys.ArrowDown)f-=1;if(keys.KeyD||keys.ArrowRight)s+=1;if(keys.KeyA||keys.ArrowLeft)s-=1;
+    if(f||s)movePlayer(dt,s,f);
+    if(!isJumping){rig.position.y=getGround(rig.position.x,rig.position.z);}else{jumpVelocity-=3.71*dt;rig.position.y+=jumpVelocity*dt;if(rig.position.y<=getGround(rig.position.x,rig.position.z)){rig.position.y=getGround(rig.position.x,rig.position.z);jumpVelocity=0;isJumping=false;}}
+  }
+  updateDust(dt,now);updateMarkers(now);updateScan(dt);
+  if(terrainMesh){terrainMesh.position.y=0;}
+  vrPanel.visible=renderer.xr.isPresenting;
+  renderer.render(scene,camera);
+}
+renderer.setAnimationLoop(animate);
+
+function startMission(){if(started)return;started=true;$('intro').classList.add('hidden');$('startButton').textContent='EM CAMPO';$('startButton').disabled=true;toast('Expedição iniciada. Siga os quatro objetivos e registre suas observações.');showVRPanel('EXPEDIÇÃO INICIADA','Investigue as quatro estações do percurso. O quiz será liberado quando todos os objetivos forem concluídos.');}
+$('beginMission').addEventListener('click',startMission);$('startButton').addEventListener('click',()=>{startMission();$('startButton').textContent='EM CAMPO';$('startButton').disabled=true;});
+$('scanButton').addEventListener('click',scan);$('hammerButton').addEventListener('click',hammer);$('dustButton').addEventListener('click',toggleDust);$('jumpButton').addEventListener('click',jump);
+$('stationSelect').addEventListener('change',e=>{rebuildStation(e.target.value);toast('Estação alterada: '+stations[currentStation].title+'.');});
+$('teleportBase').addEventListener('click',()=>{const cfg=stations[currentStation],x=cfg.spawn.x,z=cfg.spawn.z;rig.position.set(x,terrainHeight(x,z,currentStation),z);camera.position.y=renderer.xr.isPresenting?0:1.7;toast('Retorno ao ponto de observação inicial.');});
+$('teleportHigh').addEventListener('click',()=>{teleportHighPoint();toast(currentStation==='valles'?'Mirante do cânion: observe o desnível até o fundo.':'Cume de Olympus Mons: observe a caldeira e suas bordas.');});
+$('telemetryButton').addEventListener('click',()=>openInfo('TELEMETRIA','Estado da expedição',`<strong>Estação:</strong> ${stations[currentStation].title}<br><strong>Comparação de gravidade:</strong> Marte 3,71 m/s² · Terra 9,81 m/s²<br><strong>Coordenadas locais:</strong> X ${fmt(Math.round(rig.position.x))} m · Z ${fmt(Math.round(rig.position.z))} m<br><strong>Altitude modelada:</strong> ${fmt(Math.round(terrainHeight(rig.position.x,rig.position.z,currentStation)))} m<br><strong>Gravidade aplicada:</strong> 3,71 m/s²<br><strong>Objetivos concluídos:</strong> ${completed.size}/4<br><strong>Tempo em campo:</strong> ${$('elapsedTimer').textContent}<br><br>O campo de altitude é uma aproximação didática. Não deve ser usado como coordenada cartográfica de navegação.`));
+$('sourcesButton').addEventListener('click',showSources);$('quizButton').addEventListener('click',()=>{if(completed.size===4)openQuiz();});
+
+function openInfo(k,t,html){$('infoEyebrow').textContent=k;$('infoHeading').textContent=t;$('infoContent').innerHTML=html;$('infoExtra').innerHTML='';$('infoModal').classList.add('open');}
+function showSources(){
+  openInfo('DADOS E FONTES','Base científica e limites do modelo',`<div style="font-size:10px;line-height:1.65;color:#c9b8aa">
+  <p><strong style="color:#f3c49b">Topografia:</strong> MOLA global (≈463 m/pixel) e mosaicos HRSC/MOLA (≈200 m/pixel) são referências para a forma regional. Modelos HiRISE locais podem chegar a 1–2 m/pixel. Este arquivo gera uma topografia 3D didática por funções matemáticas e parâmetros de escala; não carrega um DEM HiRISE/MOLA bruto nem representa uma área cartográfica específica.</p>
+  <p><strong style="color:#f3c49b">NASA · 21 set. 2026:</strong> resultados do Perseverance na Margin Unit, cratera Jezero, indicam pelo menos três episódios distintos de interação entre água e rochas, incluindo água subterrânea e um evento posterior de água aquecida.</p>
+  <p><strong style="color:#f3c49b">NASA · 28 mai. 2026:</strong> cristais de hematita em amostras da cratera Gale podem preservar sinais de temperatura e duração da presença de água no passado.</p>
+  <p><strong style="color:#f3c49b">Para onde foi a água?</strong> Parte pode ter ficado congelada no subsolo; outra parte foi dissociada na atmosfera, e o hidrogênio escapou para o espaço. A perda atmosférica, associada à exposição ao vento solar e a processos como o sputtering, contribuiu para que a água líquida deixasse de ser estável na superfície atual.</p>
+  <p><strong style="color:#f3c49b">Escalas planetárias:</strong> Valles Marineris tem cerca de 3.870 km de extensão e até 9,3 km de profundidade; Olympus Mons atinge aproximadamente 26 km acima das planícies e cerca de 600 km de largura.</p>
+  <p><strong style="color:#f3c49b">Créditos das imagens:</strong> NASA/JPL-Caltech, University of Arizona / HiRISE. As imagens são carregadas diretamente dos repositórios científicos e exigem conexão.</p>
+  </div>
+  <div style="display:grid;gap:7px;margin-top:12px">
+  <a style="color:#efb889;font-size:10px" target="_blank" rel="noopener" href="https://science.nasa.gov/mars/facts/">NASA Science · Mars Facts</a>
+  <a style="color:#efb889;font-size:10px" target="_blank" rel="noopener" href="https://fdp.astrogeology.usgs.gov/fdp/mars/">USGS Astrogeology · produtos de dados de Marte</a>
+  <a style="color:#efb889;font-size:10px" target="_blank" rel="noopener" href="https://registry.opendata.aws/nasa-usgs-mars-hirise-dtms/">NASA/USGS · HiRISE Digital Terrain Models</a>
+  <a style="color:#efb889;font-size:10px" target="_blank" rel="noopener" href="https://www.nasa.gov/solar-system/planets/mars/nasa-discovery-reveals-complex-water-systems-on-early-mars/">NASA · Complex Water Systems on Early Mars (2026)</a>
+  <a style="color:#efb889;font-size:10px" target="_blank" rel="noopener" href="https://science.nasa.gov/science-research/astromaterials/nasa-uses-mineralogical-marker-to-understand-ancient-martian-climate/">NASA · Hematite como marcador climático (2026)</a>
+  <a style="color:#efb889;font-size:10px" target="_blank" rel="noopener" href="https://science.nasa.gov/missions/maven/nasas-maven-makes-first-observation-of-atmospheric-sputtering-at-mars/">NASA · MAVEN observa sputtering e perda atmosférica (2025)</a>
+  <a style="color:#efb889;font-size:10px" target="_blank" rel="noopener" href="https://science.nasa.gov/solar-system/planets/mars/nasas-hubble-maven-help-solve-the-mystery-of-mars-escaping-water/">NASA · Hubble e MAVEN investigam a água que escapou de Marte</a>
+  <a style="color:#efb889;font-size:10px" target="_blank" rel="noopener" href="https://developer-cn.picoxr.com/en/document/web/">PICO Developer · WebXR nos runtimes web (PICO OS 6)</a>
+  <a style="color:#efb889;font-size:10px" target="_blank" rel="noopener" href="https://developer.picoxr.com/document/unity/input-mapping/">PICO Developer · mapeamento dos controles Neo 3</a>
+  <a style="color:#efb889;font-size:10px" target="_blank" rel="noopener" href="https://developer.picoxr.com/document/web/web-api/">PICO Developer · Web API</a>
+  </div>`);
+}
+
+// Final quiz: student interpretation, not memorization only.
+const quizData=[
+  {q:'Valles Marineris é um sistema de cânions gigantes. Qual explicação geológica é mais consistente?',a:['Fraturamento e deformação tectônica, com modificação posterior por deslizamentos, água e vento.','Erosão causada exclusivamente por um rio atual.','A marca deixada pelo impacto de um único asteroide.'],c:0,f:'A estrutura está associada à evolução tectônica da região de Tharsis e foi modificada por vários processos superficiais.'},
+  {q:'Que conjunto de evidências pode sustentar a hipótese de água líquida em Marte no passado?',a:['Apenas a cor avermelhada do solo.','Redes de vales, deltas, sedimentos em camadas e minerais como argilas e carbonatos.','Somente crateras circulares de impacto.'],c:1,f:'A interpretação é mais robusta quando diferentes feições geomorfológicas e assinaturas mineralógicas concordam.'},
+  {q:'Como o vento atua na paisagem marciana atual?',a:['Não atua, porque a atmosfera é rarefeita.','Transporta grãos e poeira, forma dunas e pode desgastar rochas por abrasão.','Produz placas tectônicas e vulcões.'],c:1,f:'A atmosfera é fina, mas ventos e tempestades conseguem mobilizar poeira e areia e remodelar a superfície.'},
+  {q:'A gravidade de Marte é aproximadamente 3,71 m/s². O que isso significa para um salto com a mesma velocidade inicial?',a:['O salto tende a atingir maior altura e durar mais que na Terra.','O corpo perde massa.','A gravidade não influencia o movimento vertical.'],c:0,f:'A massa permanece a mesma; o peso é menor e, com a mesma velocidade inicial, a aceleração gravitacional menor aumenta a altura e a duração do salto.'},
+  {q:'Qual processo construiu principalmente Olympus Mons?',a:['Acúmulo de sucessivos derrames de lava, formando um vulcão-escudo.','Deposição de sedimentos por um oceano.','Colisão de um grande asteroide.'],c:0,f:'A forma ampla e as encostas suaves são características de um vulcão-escudo construído por fluxos de lava.'},
+  {q:'Por que a água líquida não permanece estável por longos períodos na superfície atual de Marte?',a:['Porque Marte não possui água em nenhuma forma.','Porque a atmosfera é muito rarefeita e a pressão superficial é baixa.','Porque a gravidade marciana é zero.'],c:1,f:'Hoje há gelo de água em Marte, mas a baixa pressão atmosférica dificulta a estabilidade prolongada da água líquida na superfície.'},
+  {q:'Qual explicação melhor resume o destino de parte da água antiga de Marte?',a:['Toda a água desapareceu em uma única inundação.','Parte permaneceu congelada no subsolo e parte perdeu hidrogênio para o espaço após processos atmosféricos.','A água transformou-se integralmente em lava.'],c:1,f:'Medições de Hubble e MAVEN apoiam a existência de água subterrânea congelada e a fuga de hidrogênio para o espaço; a erosão atmosférica também contribuiu para a perda de condições superficiais favoráveis à água líquida.'}
+];
+let quizAnswers=Array(quizData.length).fill(null),quizSubmitted=false;
+function renderQuiz(){
+  const root=$('quizQuestions');root.innerHTML='';
+  quizData.forEach((q,i)=>{
+    const wrap=document.createElement('section');wrap.className='question';
+    const title=document.createElement('div');title.className='q-title';title.textContent=`${i+1}. ${q.q}`;wrap.appendChild(title);
+    const answers=document.createElement('div');answers.className='answers';
+    q.a.forEach((a,j)=>{const b=document.createElement('button');b.className='answer'+(quizAnswers[i]===j?' selected':'');b.textContent=String.fromCharCode(65+j)+') '+a;b.addEventListener('click',()=>{if(quizSubmitted)return;quizAnswers[i]=j;renderQuiz();});answers.appendChild(b);});
+    wrap.appendChild(answers);
+    const feed=document.createElement('div');feed.className='feedback';if(quizSubmitted){feed.textContent=(quizAnswers[i]===q.c?'Correto. ':'Reveja. ')+q.f;}wrap.appendChild(feed);
+    if(quizSubmitted){answers.querySelectorAll('.answer').forEach((b,j)=>{if(j===q.c)b.classList.add('correct');if(quizAnswers[i]===j&&j!==q.c)b.classList.add('wrong');});}
+    root.appendChild(wrap);
+  });
+  $('quizResult').classList.toggle('show',quizSubmitted);
+  $('submitQuiz').textContent=quizSubmitted?'FECHAR RELATÓRIO':'CORRIGIR RESPOSTAS';
+}
+function openQuiz(){quizAnswers=Array(quizData.length).fill(null);quizSubmitted=false;renderQuiz();$('quizModal').classList.add('open');}
+$('submitQuiz').addEventListener('click',()=>{
+  if(quizSubmitted){$('quizModal').classList.remove('open');return;}
+  if(quizAnswers.some(v=>v===null)){toast('Responda às sete questões antes de corrigir.');return;}
+  const score=quizAnswers.reduce((s,a,i)=>s+(a===quizData[i].c?1:0),0);quizSubmitted=true;renderQuiz();$('quizScore').textContent=score+'/7';$('quizFeedback').textContent=score>=5?'Excelente interpretação geológica. Você relacionou as formas do relevo aos processos planetários.':score>=4?'Bom trabalho. Revise os comentários das questões para consolidar as evidências.':'Retorne ao caderno de campo e compare novamente as formas, os materiais e os processos. Uma hipótese geológica precisa de várias evidências.';
+});
+$('retryQuiz').addEventListener('click',()=>{quizAnswers=Array(quizData.length).fill(null);quizSubmitted=false;renderQuiz();});
+document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>$(b.dataset.close).classList.remove('open')));
+document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
+
+// WebXR entry with runtime feature detection; browser must be on a secure origin.
+async function enterVR(){
+  if(!navigator.xr||!navigator.xr.isSessionSupported){toast('Este navegador não disponibiliza a API WebXR. Use o modo 3D na tela ou abra no navegador PICO.');return;}
+  try{
+    const supported=await navigator.xr.isSessionSupported('immersive-vr');
+    if(!supported){toast('O navegador detectou WebXR, mas não oferece sessão immersive-vr neste dispositivo.');return;}
+    const session=await navigator.xr.requestSession('immersive-vr',{optionalFeatures:['local-floor','bounded-floor','hand-tracking']});
+    await renderer.xr.setSession(session);document.body.classList.add('xr-active');if(!started)startMission();
+    camera.position.set(0,0,0);vrPanel.visible=true;showVRPanel('BEM-VINDO A MARTE','Aponte o controle para os marcadores e pressione o gatilho. Analógico esquerdo: mover. Direito: virar. A: escâner · B: martelo · X: salto · Y: poeira.')
+    session.addEventListener('end',()=>{document.body.classList.remove('xr-active');camera.position.set(0,1.7,0);vrPanel.visible=false;toast('Sessão VR encerrada.');});
+  }catch(err){console.error(err);toast('Não foi possível iniciar VR: '+(err?.message||'verifique permissões e HTTPS.'));}
+}
+$('vrButton').addEventListener('click',enterVR);$('introVR').addEventListener('click',enterVR);
+
+// A toggle for PICO controllers whose thumbstick vertical axis is reversed.
+const invertBtn=document.createElement('button');invertBtn.id='invertController';invertBtn.className='btn ghost small';invertBtn.textContent='EIXO Y: PADRÃO';invertBtn.title='Inverte o sentido vertical do analógico esquerdo';invertBtn.style.position='fixed';invertBtn.style.zIndex='5';invertBtn.style.left='18px';invertBtn.style.bottom='18px';invertBtn.style.opacity='.75';invertBtn.addEventListener('click',()=>{invertStickY=!invertStickY;invertBtn.textContent=invertStickY?'EIXO Y: INVERTIDO':'EIXO Y: PADRÃO';toast('Configuração do analógico atualizada.');});document.body.appendChild(invertBtn);
+
+// Initial scene and responsive rendering.
+rebuildStation('valles');
+function resize(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight,false);renderer.setPixelRatio(Math.min(devicePixelRatio||1,renderer.xr.isPresenting?1.2:1.45));}
+window.addEventListener('resize',resize);
+if(!navigator.xr){$('vrButton').textContent='VR INDISPONÍVEL';$('vrButton').classList.remove('primary');$('vrButton').classList.add('ghost');}
+$('statusText').textContent=navigator.xr?'WEBXR DETECTADO':'MODO 3D / DESKTOP';
+updateProgress();
+
+// Basic device guidance in the field note for non-XR screens.
+if(matchMedia('(pointer:coarse)').matches){$('desktopHint').textContent='Arraste para olhar · use os controles da tela · toque nos marcadores para investigar';}
+</script>
+</body>
+</html>
